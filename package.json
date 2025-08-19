@@ -1,0 +1,14 @@
+{
+  "name": "sucesso",
+  "version": "1.0.0",
+  "description": "Primeira vez realizando uma api",
+  "main": "server.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "Ellen Alves de Oliveira",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

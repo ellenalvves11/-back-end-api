@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "getStatus",
+  "name": "api-test",
   "type": "collection",
   "ignore": [
     "node_modules",

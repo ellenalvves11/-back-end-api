@@ -181,6 +181,123 @@ app.put("/questoes/:id", async (req, res) => {
   }
 });
 
+app.get("/planos", async (req, res) => {
+  console.log("Rota GET /planos solicitada");
+  try {
+    const db = conectarBD();
+    const resultado = await db.query("SELECT * FROM planos ORDER BY id_plano ASC");
+    res.json(resultado.rows);
+  } catch (e) {
+    console.error("Erro ao buscar planos:", e);
+    res.status(500).json({ erro: "Erro interno ao buscar planos" });
+  }
+});
+
+// GET /planos/:id → retorna um plano específico
+app.get("/planos/:id", async (req, res) => {
+  console.log("Rota GET /planos/:id solicitada");
+  try {
+    const id = req.params.id;
+    const db = conectarBD();
+    const resultado = await db.query("SELECT * FROM planos WHERE id_plano = $1", [id]);
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ mensagem: "Plano não encontrado" });
+    }
+    res.json(resultado.rows[0]);
+  } catch (e) {
+    console.error("Erro ao buscar plano:", e);
+    res.status(500).json({ erro: "Erro interno ao buscar plano" });
+  }
+});
+
+// POST /planos → cria um novo plano
+app.post("/planos", async (req, res) => {
+  console.log("Rota POST /planos solicitada");
+  try {
+    const { nome, velocidade_mbps, franquia_gb, valor, descricao } = req.body;
+
+    if (!nome || !velocidade_mbps || !valor) {
+      return res.status(400).json({
+        erro: "Dados inválidos",
+        mensagem: "Os campos nome, velocidade_mbps e valor são obrigatórios."
+      });
+    }
+
+    const db = conectarBD();
+    const consulta = `
+      INSERT INTO planos (nome, velocidade_mbps, franquia_gb, valor, descricao)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    const valores = [nome, velocidade_mbps, franquia_gb || null, valor, descricao || null];
+    const resultado = await db.query(consulta, valores);
+
+    res.status(201).json({
+      mensagem: "Plano criado com sucesso!",
+      plano: resultado.rows[0]
+    });
+  } catch (e) {
+    console.error("Erro ao criar plano:", e);
+    res.status(500).json({ erro: "Erro interno ao criar plano" });
+  }
+});
+
+// PUT /planos/:id → atualiza um plano existente
+app.put("/planos/:id", async (req, res) => {
+  console.log("Rota PUT /planos/:id solicitada");
+  try {
+    const id = req.params.id;
+    const { nome, velocidade_mbps, franquia_gb, valor, descricao } = req.body;
+    const db = conectarBD();
+
+    const existente = await db.query("SELECT * FROM planos WHERE id_plano = $1", [id]);
+    if (existente.rows.length === 0) {
+      return res.status(404).json({ mensagem: "Plano não encontrado" });
+    }
+
+    const atual = existente.rows[0];
+    const novoNome = nome || atual.nome;
+    const novaVelocidade = velocidade_mbps || atual.velocidade_mbps;
+    const novaFranquia = franquia_gb !== undefined ? franquia_gb : atual.franquia_gb;
+    const novoValor = valor || atual.valor;
+    const novaDescricao = descricao || atual.descricao;
+
+    const consulta = `
+      UPDATE planos
+      SET nome = $1, velocidade_mbps = $2, franquia_gb = $3, valor = $4, descricao = $5
+      WHERE id_plano = $6
+      RETURNING *;
+    `;
+    const resultado = await db.query(consulta, [novoNome, novaVelocidade, novaFranquia, novoValor, novaDescricao, id]);
+
+    res.json({
+      mensagem: "Plano atualizado com sucesso!",
+      plano: resultado.rows[0]
+    });
+  } catch (e) {
+    console.error("Erro ao atualizar plano:", e);
+    res.status(500).json({ erro: "Erro interno ao atualizar plano" });
+  }
+});
+
+// DELETE /planos/:id → exclui um plano
+app.delete("/planos/:id", async (req, res) => {
+  console.log("Rota DELETE /planos/:id solicitada");
+  try {
+    const id = req.params.id;
+    const db = conectarBD();
+    const resultado = await db.query("DELETE FROM planos WHERE id_plano = $1 RETURNING *;", [id]);
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ mensagem: "Plano não encontrado" });
+    }
+
+    res.json({ mensagem: "Plano excluído com sucesso!" });
+  } catch (e) {
+    console.error("Erro ao excluir plano:", e);
+    res.status(500).json({ erro: "Erro interno ao excluir plano" });
+  }
+});
 
 
 app.listen(port, () => {            // Um socket para "escutar" as requisições
